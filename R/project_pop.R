@@ -1,4 +1,4 @@
-project_pop = function(nages, waa, curr_nya, maturity,
+project_pop = function(nages, waa, selectivity, curr_nya, maturity,
                        recruitment, survival, threshold,
                        harvest_rate, recruit_type = NULL) {
   
@@ -37,7 +37,7 @@ project_pop = function(nages, waa, curr_nya, maturity,
     spawn_biomass_before = spawn_biomass
     
     # apply catch to population
-    catch_at_age = (waa * maturity * next_nya) / spawn_biomass * catch
+    catch_at_age = (waa * maturity * next_nya * selectivity) / spawn_biomass * catch
     next_nya = ifelse(waa > 0 & maturity > 0, 
                       next_nya - (catch_at_age / (waa * maturity)), 
                       next_nya)

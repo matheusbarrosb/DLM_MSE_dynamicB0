@@ -1,8 +1,8 @@
 run_mse = function(n_sims, nyears, nages, init_nya,
                    waa, harvest_rate, rec_regime_length,
-                   rec_type, sr_params,
+                   rec_type, sr_params, selectivity,
                    maturity, threshold, vb_params, plot = FALSE) {
-  
+
   # make containers
   abs_biomass_mat  = matrix(NA, nrow = nyears, ncol = n_sims)
   rel_biomass_mat  = matrix(NA, nrow = nyears, ncol = n_sims)
@@ -14,34 +14,35 @@ run_mse = function(n_sims, nyears, nages, init_nya,
   pb  = txtProgressBar(min = 0, max = n_sims, style = 3)
   sim = list()
   for (i in 1:n_sims) {
-    
+
     setTxtProgressBar(pb, i)
-    
+
     sim[[i]] =
-      run_simulation(nyears            = nyears, 
+      run_simulation(nyears            = nyears,
                      nages             = nages,
                      init_nya          = init_nya,
-                     waa               = waa, 
+                     waa               = waa,
+                     selectivity       = selectivity,
                      rec_regime_length = rec_regime_length,
                      sr_params         = sr_params,
                      rec_type          = rec_type,
-                     survival_mean     = 0.8, 
+                     survival_mean     = 0.8,
                      survival_sd       = 0.1,
                      harvest_rate      = harvest_rate,
                      maturity          = maturity,
                      threshold         = threshold,
                      vb_params         = vb_params,
                      bin_size          = 1)
-    
+
     abs_biomass_mat[,i]  = sim[[i]]$biomass
     rel_biomass_mat[,i]  = sim[[i]]$biomass / sim[[i]]$ghost_biomass
     catch_mat[,i]        = sim[[i]]$catch
     rec_mat[,i]          = sim[[i]]$nya_mat[,1]
     mean_lengths_mat[,i] = format_lya_mat(sim[[i]]$length_mat, vb_params)$mean_lengths
-    
+
   }
   close(pb)
-  
+
   # summarize outputs
   abs_biomass_mean = rowMeans(abs_biomass_mat)
   abs_biomass_sd   = apply(abs_biomass_mat, 1, sd)
@@ -56,21 +57,21 @@ run_mse = function(n_sims, nyears, nages, init_nya,
 
   # plotting
   if (plot == TRUE) {
-    
 
-    par(mfrow = c(2,3), # 2 rows, 3 columns 
-        mar = c(3,3,2,1), # smaller margins for each plot 
-        oma = c(1,1,1,1), # outer margins 
-        mgp = c(2,0.7,0), # axis title, labels, line spacing 
-        tcl = -0.3) 
-    
+
+    par(mfrow = c(2,3), # 2 rows, 3 columns
+        mar = c(3,3,2,1), # smaller margins for each plot
+        oma = c(1,1,1,1), # outer margins
+        mgp = c(2,0.7,0), # axis title, labels, line spacing
+        tcl = -0.3)
+
     plot(abs_biomass_mean, type = "l", xlab = "Year", ylab = "Spawning biomass", ylim = c(0, max( (abs_biomass_mean + abs_biomass_sd)*1.2)))
     lines(abs_biomass_mean + abs_biomass_sd*1.92, lty = 2)
     lines(abs_biomass_mean - abs_biomass_sd*1.96, lty = 2)
     for(i in 1:10) {
       lines(abs_biomass_mat[,i], col = rgb(0,0,0,0.2))
     }
-    
+
     plot(rel_biomass_mean, type = "l", xlab = "Year", ylab = expression(B/B[unfished]), ylim = c(0, max( (rel_biomass_mean + rel_biomass_sd)*1.2)))
     lines(rel_biomass_mean + rel_biomass_sd*1.92, lty = 2)
     lines(rel_biomass_mean - rel_biomass_sd*1.96, lty = 2)
@@ -78,14 +79,14 @@ run_mse = function(n_sims, nyears, nages, init_nya,
       lines(rel_biomass_mat[,i], col = rgb(0,0,0,0.2))
     }
     abline(h = 0.5, lty = 2, col = "red")
-    
+
     plot(recruitment_mean, type = "l", xlab = "Year", ylab = "Recruitment (N)", ylim = c(0, max( (recruitment_mean + recruitment_sd)*1.2)))
     lines(recruitment_mean + recruitment_sd*1.92, lty = 2)
     lines(recruitment_mean - recruitment_sd*1.96, lty = 2)
     for(i in 1:10) {
       lines(rec_mat[,i], col = rgb(0,0,0,0.2))
     }
-    
+
     plot(catch_mean, type = "p", pch = 20, cex = 0.8,
          xlab = "Year", ylab = "Catch (t)", ylim = c(0, max( (catch_mean + catch_sd)*1.2)))
     arrows(1:nyears, catch_mean - catch_sd*1.96,
@@ -96,10 +97,10 @@ run_mse = function(n_sims, nyears, nages, init_nya,
          xlab = "Age", ylab = "Mean length (cm)", ylim = c(0, max( (mean_lenghts_mu + mean_lengths_sd)*1.2)))
 
   }
-  
-  output = 
+
+  output =
     list(
-      df = 
+      df =
       data.frame(
         abs_biomass_mean = abs_biomass_mean,
         abs_biomass_sd   = abs_biomass_sd,
@@ -113,9 +114,8 @@ run_mse = function(n_sims, nyears, nages, init_nya,
       sims = sim
     )
 
-  
   return(output)
-  
+
 }
 
 
