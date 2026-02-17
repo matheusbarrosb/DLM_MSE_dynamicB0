@@ -38,8 +38,13 @@ compute_recruitment = function(ssb, sr_params, rec_regime_length, year, type = c
     } else {
       h = h_low
     }
-    # compute recruitment
-    recruitment = (4 * h * R0 * ssb) / (SSB0 * (1 - h) + ssb * (5 * h - 1))
+    # # compute recruitment
+    exp_recruitment = (4 * h * R0 * ssb) / (SSB0 * (1 - h) + ssb * (5 * h - 1))
+    
+    dev = rnorm(1, mean = 0, sd = sigma_rec)
+    
+    recruitment = exp_recruitment * exp(dev - (sigma_rec^2)/2)
+    
   } else {
     stop("type has to be either 'declouped' or 'BV'.")
   }

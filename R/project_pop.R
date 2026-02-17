@@ -1,63 +1,54 @@
 project_pop = function(nages, waa, selectivity, curr_nya, maturity,
-                       recruitment, survival, threshold,
-                       harvest_rate, recruit_type = NULL) {
+                       recruitment, survival, thresholds, est_spawn_biomass = NULL,
+                       max_harvest_rate, recruit_type = NULL, estimation = FALSE) {
   
-  # ensure survival is between 0.1 and 0.9
-  if (survival < 0.1) {
-    survival = 0.1
-  } else if (survival > 0.9) {
-    survival = 0.9
+  # convert instantaneous mortality to discrete survival
+  M = -log(survival)
+  
+  # determine harvest rate h based on start of year SSB
+  true_start_ssb = sum(curr_nya * waa * maturity)
+  if (estimation == TRUE && !is.null(est_spawn_biomass)) {
+    h = control_rule(spawn_biomass    = est_spawn_biomass,
+                     thresholds       = thresholds,
+                     max_harvest_rate = max_harvest_rate)
+  } else {
+    h = control_rule(spawn_biomass    = true_start_ssb,
+                     thresholds       = thresholds,
+                     max_harvest_rate = max_harvest_rate)
   }
   
+  # calculate the biomass available to the fishery after applying natural mortality
+  nya_post_M = curr_nya * exp(-M)
+  vuln_bio_post_M = sum(nya_post_M * waa * selectivity)
+  
+  # realized harvest rate
+  target_catch = true_start_ssb * h 
+  
+  U = target_catch / (vuln_bio_post_M + 1e-10)
+  if (U > 0.99) U = 0.99
+  
+  # calculate survivors - Baranov Catch Equation
+  # Survivors = N_start * exp(-M) * (1 - U * sel)
+  survivors = curr_nya * exp(-M) * (1 - U * selectivity)
+  
+  # catch at age
+  catch_at_age = curr_nya * exp(-M) * (U * selectivity) * waa
+
   next_nya    = numeric(nages)
   next_nya[1] = recruitment
   
-  # ages 1 - (nages - 1)
-  for (a in 2:(nages-1)) {
-    next_nya[a] = curr_nya[a-1] * survival
+  for (a in 1:(nages-1)) {
+    next_nya[a+1] = survivors[a]
   }
+
+  # add to plus group
+  next_nya[nages] = next_nya[nages] + survivors[nages]
   
-  # plus group
-  next_nya[nages] = curr_nya[nages - 1] * survival + curr_nya[nages] * survival
-  
-  # ensure non negative
-  next_nya[next_nya < 0] = 0
-  
-  next_nya_ghost = next_nya
-  
-  # calculate biomass
-  spawn_biomass = sum(waa * maturity * next_nya)
-  
-  # define and apply catch, if biomass > threshold, harvest rate = h, else = 0
-  catch_at_age = numeric(nages)
-  if (spawn_biomass > threshold) {
-    h = harvest_rate
-    catch = spawn_biomass * h
-    
-    spawn_biomass_before = spawn_biomass
-    
-    # apply catch to population
-    catch_at_age = (waa * maturity * next_nya * selectivity) / spawn_biomass * catch
-    next_nya = ifelse(waa > 0 & maturity > 0, 
-                      next_nya - (catch_at_age / (waa * maturity)), 
-                      next_nya)
-    next_nya[next_nya < 0] = 0
-    
-    # update spawning biomass after catch
-    spawn_biomass = sum(waa * maturity * next_nya)
-    
-    # calculate actual catch removed
-    catch = spawn_biomass_before - spawn_biomass
-    
-  } else {
-    h = 0
-    catch = 0
-  }
+  total_yield = sum(catch_at_age)
+  spawn_biomass_after = sum(next_nya * waa * maturity)
   
   return(list(next_nya       = next_nya,
-              lengths        = lengths,
-              spawn_biomass  = spawn_biomass,
+              spawn_biomass  = spawn_biomass_after,
               catch_at_age   = catch_at_age,
-              total_catch    = catch))
-  
+              total_catch    = total_yield))
 }
