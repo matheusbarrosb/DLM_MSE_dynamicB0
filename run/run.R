@@ -30,7 +30,6 @@ recruitment  = init_nya[1]
 thresholds    = c(0.2, 0.7)
 max_harvest_rate = 0.15
 
-
 vb_params = 
   list(
     k       = 0.15, 
@@ -66,13 +65,13 @@ sr_params = list(
 # configure assessment model --------------------------
 mcmc_setup = 
   list(
-    chains = 1,
-    niter   = 30,
-    nwarmup = 10,
-    thin   = 1,
-    adapt_delta = 0.99,
+    chains        = 1,
+    niter         = 30,
+    nwarmup       = 10,
+    thin          = 1,
+    adapt_delta   = 0.99,
     max_treedepth = 15,
-    verbose = 0
+    verbose       = 0
   )
 
 
@@ -97,13 +96,32 @@ mse_output =
           sr_params         = sr_params,
           plot              = TRUE,
           sca_model_path    = here("estimation", "SCA", "SCA_log.stan"),
+          spm_model_path    = here("estimation", "SPM", "SPM_log.stan"), 
           mcmc_setup        = mcmc_setup,
-          estimation        = TRUE)
+          estimation        = TRUE,
+          est_method        = "SPM")
 
-# CURRENT ISSUES: -------------------------------------
-## 1. Mismatch between EM and OM - OM simulates mortality sequentially but EM uses instantaneous rates [SOLVED]
-## 2. Plus group handling - OM simulates a discrete accumulation into plus groups, while EM uses geometric series [SOLVED]
-## 3. HCR in the OM and harvest rate U in the EM must both consider *vulnerable biomass* 
+
+
+mse_output$df
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
