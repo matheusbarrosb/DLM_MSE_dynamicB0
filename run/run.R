@@ -33,10 +33,10 @@ max_harvest_rate = 0.15
 vb_params = 
   list(
     k       = 0.15, 
-    k_sd    = 0.005,
+    k_sd    = 0,
     linf    = 200,
-    linf_sd = 30,
-    t0      = -1
+    linf_sd = 0,
+    t0      = 0
   )
 
 M = 0.2
@@ -57,7 +57,7 @@ sr_params = list(
   h_high           = 0.7,
   R0               = r0_value,
   SSB0             = ssb0_value, 
-  sigma_rec        = 0.2,
+  sigma_rec        = 0.25,
   recruitment_mean = r0_value / 3,
   recruitment_sd   = (r0_value / 2) * 0.2
 )
@@ -66,8 +66,8 @@ sr_params = list(
 mcmc_setup = 
   list(
     chains        = 1,
-    niter         = 30,
-    nwarmup       = 10,
+    niter         = 300,
+    nwarmup       = 100,
     thin          = 1,
     adapt_delta   = 0.99,
     max_treedepth = 15,
@@ -96,18 +96,20 @@ mse_output =
           sr_params         = sr_params,
           plot              = TRUE,
           sca_model_path    = here("estimation", "SCA", "SCA_log.stan"),
-          spm_model_path    = here("estimation", "SPM", "SPM_log.stan"), 
+          spm_model_path    = here("estimation", "SPM", "SPM_log.stan"),
+          lbspr_model_path  = here("estimation", "LBSPR", "LBSPR.stan"),
           mcmc_setup        = mcmc_setup,
           estimation        = TRUE,
-          est_method        = "SPM")
+          est_method        = "LBSPR")
 
+true = mse_output$df$rel_biomass_mean
+est= mse_output$df$est_biomass_mean
 
+# plot both against time
+plot(1:nrow(mse_output$df), true, type = "l", col = "blue", ylim = c(0, 1.5), ylab = "Relative Biomass", xlab = "Year")
+lines(1:nrow(mse_output$df), est, col = "red")
 
-mse_output$df
-
-
-
-
+exp(0.83)
 
 
 

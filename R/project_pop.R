@@ -27,28 +27,33 @@ project_pop = function(nages, waa, selectivity, curr_nya, maturity,
   U = target_catch / (vuln_bio_post_M + 1e-10)
   if (U > 0.99) U = 0.99
   
-  # calculate survivors - Baranov Catch Equation
-  # Survivors = N_start * exp(-M) * (1 - U * sel)
+  # calculate survivors - Baranov Catch Equation with Pope's approx
   survivors = curr_nya * exp(-M) * (1 - U * selectivity)
   
-  # catch at age
-  catch_at_age = curr_nya * exp(-M) * (U * selectivity) * waa
-
+  # catch at age in biomass
+  catch_yield_at_age = curr_nya * exp(-M) * (U * selectivity) * waa
+  
+  # catch in numbers 
+  catch_numbers_at_age = curr_nya * exp(-M) * (U * selectivity)
+  
   next_nya    = numeric(nages)
   next_nya[1] = recruitment
   
   for (a in 1:(nages-1)) {
     next_nya[a+1] = survivors[a]
   }
-
+  
   # add to plus group
   next_nya[nages] = next_nya[nages] + survivors[nages]
   
-  total_yield = sum(catch_at_age)
+  total_yield = sum(catch_yield_at_age)
   spawn_biomass_after = sum(next_nya * waa * maturity)
   
   return(list(next_nya       = next_nya,
               spawn_biomass  = spawn_biomass_after,
-              catch_at_age   = catch_at_age,
+              catch_at_age   = catch_yield_at_age,   # Keep for biomass tracking
+              catch_numbers  = catch_numbers_at_age, # Add for LBSPR
               total_catch    = total_yield))
 }
+
+

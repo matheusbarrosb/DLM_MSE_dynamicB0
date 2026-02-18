@@ -6,7 +6,7 @@ estimate_stock_status = function(method, model_state = NULL, current_obs = NULL,
     updated_state = NULL
   )
   
-  if (method == "SCA") {
+  if (method == "SCA") { # ----------------------------
     
     if (is.null(model_state)) {
       stan_data = make_historical_sca_data(
@@ -40,7 +40,7 @@ estimate_stock_status = function(method, model_state = NULL, current_obs = NULL,
     output$status        = est_status
     output$updated_state = stan_data
     
-  } else if (method == "SPM") {
+  } else if (method == "SPM") { # ---------------------
     
     if (is.null(model_state)) {
       stan_data = make_historical_spm_data(
@@ -87,15 +87,46 @@ estimate_stock_status = function(method, model_state = NULL, current_obs = NULL,
     output$status        = median(post$B_B0) 
     output$updated_state = stan_data
     
-  } else if (method == "LBSCA") {
+  } else if (method == "LBSCA") { # -------------------
     
     output$status        = 1.0 
     output$updated_state = model_state
     
-  } else if (method == "LBSPR") {
+  } else if (method == "LBSPR") { # -------------------
     
-    output$status        = 1.0 
-    output$updated_state = model_state
+    if (is.null(model_state)) {
+      # initialization
+      stan_data = make_historical_lbspr_data(
+        sim            = history_data$sim,
+        burn_in_length = history_data$burn_in_length,
+        vb_params      = history_data$vb_params,
+        waa            = history_data$waa,
+        selectivity    = history_data$selectivity,
+        maturity       = history_data$maturity,
+        nages          = history_data$nages,
+        M              = history_data$M
+      )
+    } else {
+      # projection years
+      stan_data = get_lbspr_input(
+        stan_data       = model_state,
+        current_obs_len = current_obs$len_comp 
+      )
+    }
+    
+    fit = rstan::sampling(
+      object  = model_objects$LBSPR,
+      data    = stan_data,
+      chains  = 1, 
+      iter    = 1000,
+      refresh = 0
+    )
+  
+    post = rstan::extract(fit)
+    est_status = median(post$SPR)
+    
+    output$status        = est_status
+    output$updated_state = stan_data
     
   } else {
     stop("Unknown estimation method")
@@ -103,3 +134,27 @@ estimate_stock_status = function(method, model_state = NULL, current_obs = NULL,
   
   return(output)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
