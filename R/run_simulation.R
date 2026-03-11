@@ -182,7 +182,7 @@ run_simulation = function(nyears, init_nya, waa, nages,
     }
     
     # -------------------------------------------------------------------------
-    # PROJECTION ESTIMATION LOOP
+    # PROJECTION-ESTIMATION LOOP
     # -------------------------------------------------------------------------
     if (y > burn_in_length && estimation == TRUE) {
       
@@ -197,7 +197,6 @@ run_simulation = function(nyears, init_nya, waa, nages,
         ess         = 250
       )
       
-      # Safe Execution Wrapper
       assessment_result = tryCatch({
         estimate_stock_status(
           method        = est_method,
@@ -216,7 +215,7 @@ run_simulation = function(nyears, init_nya, waa, nages,
         est_model_state   = assessment_result$updated_state
         est_spawn_biomass = assessment_result$status
       } else {
-        # Fallback to the previous year's estimate to keep the loop alive
+        # fallback to the previous year's estimate to prevent NA propagation
         est_spawn_biomass = tail(est_history, 1)
       }
       
