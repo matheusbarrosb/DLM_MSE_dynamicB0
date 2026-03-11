@@ -4,7 +4,9 @@ run_simulation = function(nyears, init_nya, waa, nages,
                           threshold, maturity, selectivity, vb_params, bin_size,
                           burn_in_length, hist_harvest_rate, estimation = FALSE,
                           mcmc_setup, est_method = "SCA", model_objects = NULL,
-                          rec_type = c("decoupled", "BV")) {
+                          hcr_type = "absolute_hockey_stick",
+                          rec_type = c("decoupled", "BV"),
+                          sim_num = 1, scenario_name = "Default", log_file = "mse_log.txt") {
   
   total_years = burn_in_length + nyears
   
@@ -36,7 +38,8 @@ run_simulation = function(nyears, init_nya, waa, nages,
   colnames(length_mat) = colnames(prob_mat)
   
   est_model_state   = NULL
-  est_spawn_biomass = NULL 
+  est_spawn_biomass = NULL
+  est_history       = c()
   
   for (y in 1:total_years) {
     
@@ -75,9 +78,9 @@ run_simulation = function(nyears, init_nya, waa, nages,
       current_max_hr     = max_harvest_rate
       run_estimation     = estimation 
       
-      if (run_estimation == TRUE) {
-        if(!is.null(est_spawn_biomass)) {
-          hcr_biomass_input = est_spawn_biomass
+      if (run_estimation == TRUE && y > burn_in_length) {
+        if(length(est_history) > 0) {
+          hcr_biomass_input = tail(est_history, 1) 
         } else {
           hcr_biomass_input = curr_ssb/sr_params$SSB0
         }
@@ -97,30 +100,39 @@ run_simulation = function(nyears, init_nya, waa, nages,
       max_harvest_rate  = current_max_hr,   
       survival          = curr_survival,
       estimation        = run_estimation,
-      est_spawn_biomass = if(y > burn_in_length) hcr_biomass_input else NULL
+      est_spawn_biomass = if(y > burn_in_length) hcr_biomass_input else NULL,
+      recent_catch      = if(y > burn_in_length) catch[y-1] else 0,
+      anchor_catch      = if(y > burn_in_length) mean(catch[1:burn_in_length]) else 0,
+      hcr_type          = hcr_type
     )
     
     ghost_projection = project_pop(
-      threshold        = Inf, 
-      nages            = nages,
-      waa              = waa,
-      selectivity      = selectivity,
-      curr_nya         = curr_ghost_nya,
-      maturity         = maturity,
-      recruitment      = curr_recruitment,
-      max_harvest_rate = max_harvest_rate,
-      survival         = curr_survival,
-      estimation       = FALSE, 
-      est_spawn_biomass = NULL
+      threshold         = Inf, 
+      nages             = nages,
+      waa               = waa,
+      selectivity       = selectivity,
+      curr_nya          = curr_ghost_nya,
+      maturity          =  maturity,
+      recruitment       = curr_recruitment,
+      max_harvest_rate  = max_harvest_rate,
+      survival          = curr_survival,
+      estimation        = FALSE, 
+      est_spawn_biomass = NULL,
+      recent_catch      = 0,
+      anchor_catch      = 0,
+      hcr_type          = hcr_type
     )
     
     nya_mat[y, ]      = curr_nya
     nya_ghost_mat[y,] = curr_ghost_nya
     catch[y]          = real_projection$total_catch
     
-    current_lengths   = real_projection$catch_numbers %*% prob_mat
+    current_lengths   = real_projection$sample_numbers %*% prob_mat
     length_mat[y, ]   = current_lengths
     
+    # -------------------------------------------------------------------------
+    # BURN-IN ESTIMATION INITIALIZATION
+    # -------------------------------------------------------------------------
     if (y == burn_in_length && estimation == TRUE) {
       
       history_data = list(
@@ -134,23 +146,44 @@ run_simulation = function(nyears, init_nya, waa, nages,
         sigma_catch    = 0,
         ess            = 250,
         vb_params      = vb_params,
+        len_bins       = len_bins,
         M              = -log(survival_mean)
       )
       
-      assessment_result = estimate_stock_status(
-        method        = est_method,
-        model_state   = NULL,
-        history_data  = history_data,
-        mcmc_setup    = mcmc_setup,
-        model_objects = model_objects
-      )
+      # Safe Execution Wrapper
+      assessment_result = tryCatch({
+        estimate_stock_status(
+          method        = est_method,
+          model_state   = NULL,
+          history_data  = history_data,
+          mcmc_setup    = mcmc_setup,
+          model_objects = model_objects
+        )
+      }, error = function(e) {
+        err_msg = sprintf("[Scenario: %s | Sim: %03d | Year: %02d] ERROR IN ASSESSMENT: %s", scenario_name, sim_num, y, e$message)
+        cat(err_msg, "\n", file = log_file, append = TRUE)
+        return(NULL)
+      })
       
-      est_model_state   = assessment_result$updated_state
-      est_spawn_biomass = assessment_result$status
+      if (!is.null(assessment_result)) {
+        est_model_state   = assessment_result$updated_state
+        est_spawn_biomass = assessment_result$status
+      } else {
+        # Fallback if initialization fails
+        est_model_state   = NULL
+        est_spawn_biomass = 1.0 
+      }
       
-      message("Initialized Method: ", est_method, " | Initial B/B0: ", round(est_spawn_biomass, 2))
+      est_history = c(est_history, est_spawn_biomass)
+      
+      log_msg = sprintf("[Scenario: %s | Sim: %03d | Year: %02d] Initialized Method: %s | Initial B/B0: %.2f", 
+                        scenario_name, sim_num, y, est_method, est_spawn_biomass)
+      cat(log_msg, "\n", file = log_file, append = TRUE)
     }
     
+    # -------------------------------------------------------------------------
+    # PROJECTION ESTIMATION LOOP
+    # -------------------------------------------------------------------------
     if (y > burn_in_length && estimation == TRUE) {
       
       current_obs = list(
@@ -164,26 +197,36 @@ run_simulation = function(nyears, init_nya, waa, nages,
         ess         = 250
       )
       
-      assessment_result = estimate_stock_status(
-        method        = est_method,
-        model_state   = est_model_state,
-        current_obs   = current_obs,
-        mcmc_setup    = mcmc_setup,
-        model_objects = model_objects
-      )
+      # Safe Execution Wrapper
+      assessment_result = tryCatch({
+        estimate_stock_status(
+          method        = est_method,
+          model_state   = est_model_state,
+          current_obs   = current_obs,
+          mcmc_setup    = mcmc_setup,
+          model_objects = model_objects
+        )
+      }, error = function(e) {
+        err_msg = sprintf("[Scenario: %s | Sim: %03d | Year: %02d] ERROR IN ASSESSMENT: %s", scenario_name, sim_num, y, e$message)
+        cat(err_msg, "\n", file = log_file, append = TRUE)
+        return(NULL)
+      })
       
-      est_model_state                 = assessment_result$updated_state
-      est_spawn_biomass               = assessment_result$status
+      if (!is.null(assessment_result)) {
+        est_model_state   = assessment_result$updated_state
+        est_spawn_biomass = assessment_result$status
+      } else {
+        # Fallback to the previous year's estimate to keep the loop alive
+        est_spawn_biomass = tail(est_history, 1)
+      }
+      
       est_biomass[y - burn_in_length] = est_spawn_biomass
+      est_history                     = c(est_history, est_spawn_biomass)
       
-      message(
-        "Method: ", est_method, 
-        " | Catch = ", round(catch[y], 0), 
-        " | True B/B0 = ", round(curr_ssb/sr_params$SSB0, 3), 
-        " | Est B/B0 = ", round(est_spawn_biomass, 3)
-      )
+      log_msg = sprintf("[Scenario: %s | Sim: %03d | Year: %02d] Method: %s | Catch = %d | True B/B0 = %.3f | Est B/B0 = %.3f", 
+                        scenario_name, sim_num, y, est_method, round(catch[y]), curr_ssb/sr_params$SSB0, est_spawn_biomass)
+      cat(log_msg, "\n", file = log_file, append = TRUE)
     }
-    
   } 
   
   biomass       = rowSums(nya_mat * matrix(waa * maturity, nrow = total_years, ncol = nages, byrow = TRUE))
@@ -205,6 +248,7 @@ run_simulation = function(nyears, init_nya, waa, nages,
       est_biomass   = est_biomass,
       ghost_biomass = ghost_biomass,
       catch         = catch,
+      em_fit        = if(estimation && !is.null(assessment_result)) assessment_result else NULL,
       seeds         = seed_vec,
       burn_in_end   = burn_in_length 
     )

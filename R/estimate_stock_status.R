@@ -87,10 +87,50 @@ estimate_stock_status = function(method, model_state = NULL, current_obs = NULL,
     output$status        = median(post$B_B0) 
     output$updated_state = stan_data
     
-  } else if (method == "LBSCA") { # -------------------
+  } else if (method == "SS_CL") { # -------------------
     
-    output$status        = 1.0 
-    output$updated_state = model_state
+    if (is.null(model_state)) {
+      stan_data = make_historical_sscl_data(
+        sim            = history_data$sim,
+        burn_in_length = history_data$burn_in_length,
+        vb_params      = history_data$vb_params,
+        waa            = history_data$waa,
+        maturity       = history_data$maturity,
+        nages          = history_data$nages,
+        M              = history_data$M,
+        sr_params      = sr_params
+      )
+    } else {
+      stan_data = get_sscl_input(
+        stan_data         = model_state,
+        current_obs_catch = current_obs$catch,
+        current_obs_len   = current_obs$len_comp
+      )
+    }
+    
+    init_list = list(
+      log_F    = rep(log(0.1), stan_data$nyears),
+      rec_devs = rep(0, stan_data$nyears - 1),
+      SL50     = stan_data$Linf * 0.5,
+      SL_diff  = stan_data$Linf * 0.1
+    )
+    
+    fit = rstan::sampling(
+      object  = model_objects$SSCL,
+      data    = stan_data,
+      init    = function() init_list,
+      chains  = mcmc_setup$chains,
+      iter    = mcmc_setup$niter,
+      warmup  = mcmc_setup$nwarmup,
+      thin    = mcmc_setup$thin,
+      refresh = mcmc_setup$verbose,
+      control = list(adapt_delta = mcmc_setup$adapt_delta, max_treedepth = mcmc_setup$max_treedepth)
+    )
+    
+    post = rstan::extract(fit)
+    
+    output$status        = median(post$curr_status) 
+    output$updated_state = stan_data
     
   } else if (method == "LBSPR") { # -------------------
     
@@ -127,6 +167,7 @@ estimate_stock_status = function(method, model_state = NULL, current_obs = NULL,
     
     output$status        = est_status
     output$updated_state = stan_data
+    output$fit           = fit
     
   } else {
     stop("Unknown estimation method")
