@@ -22,15 +22,13 @@ for (i in 1:length(fun_list)) {
 # biology ---------------------------------------------
 nages        = 10
 maturity     = c(0,0,0,0,0.2,0.5,0.8,1,1,1)
-waa          = c(0, 0, 0, 65, 86, 100, 117, 130, 150, 152)
+waa          = c(5, 18, 35, 65, 86, 100, 117, 130, 150, 152)
 selectivity  = c(0, 0.2, 0.4, 0.6, 0.9, 1, 1, 1, 1, 1)
 
 vb_params = 
   list(
-    k       = 0.15, 
-    k_sd    = 0.01,
-    linf    = 30,
-    linf_sd = 2,
+    k       = 0.15, k_sd    = 0.02,
+    linf    = 30,   linf_sd = 5,
     t0      = -1
   )
 
@@ -60,15 +58,15 @@ sr_params = list(
 # management procedure --------------------------------
 threshold_list = list(
   c(0.2, 0.4), c(0.2, 0.4), c(0.2, 0.4),
-  c(0.3, 0.7)
+  c(0.4, 0.7)
 )
 
 # assessment model ------------------------------------
 mcmc_setup = 
   list(
     chains        = 1,
-    niter         = 100,
-    nwarmup       = 50,
+    niter         = 300,
+    nwarmup       = 100,
     thin          = 1,
     adapt_delta   = 0.99,
     max_treedepth = 15,
@@ -81,7 +79,7 @@ scenarios = data.frame(
   scenario_name = c("SCA_Absolute", "SPM_Absolute", "SSCL_Absolute", "LBSPR_Proportional"),
   est_method    = c("SCA", "SPM", "SS_CL", "LBSPR"),
   hcr_type      = c("absolute_hockey_stick", "absolute_hockey_stick", "absolute_hockey_stick", "proportional_multiplier"),
-  max_hr        = c(0.2, 0.2, 0.2, 1.05) # 0.2 biological rate for absolute, 1.05 catch multiplier for relative
+  max_hr        = c(0.2, 0.2, 0.2, 1.05) # 0.2 harvest rate for absolute, 1.05 catch multiplier for relative
 )
 
 # run -------------------------------------------------
@@ -99,12 +97,12 @@ for (i in 1:nrow(scenarios)) {
     run_mse(n_sims            = 100,
             nyears            = 60,
             burn_in_length    = 40,
-            hist_harvest_rate = 0.05,
+            hist_harvest_rate = 0.15,
             nages             = nages,
             init_nya          = stable_nya,
             waa               = waa,
             selectivity       = selectivity,
-            rec_regime_length = 5,
+            rec_regime_length = 15,
             rec_type          = "BV",
             survival_mean     = surv,
             survival_sd       = 0.05,

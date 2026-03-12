@@ -39,9 +39,8 @@ plot_hcr = function(thresholds, max_val) {
                                            "proportional_multiplier" = "#ff7f0e")) +
     custom_theme() +
     ggplot2::labs(
-      title = "Comparison of Relative HCR Shapes (Linear)",
       x = "Estimated Indicator (SPR or B/B0)", 
       y = "Catch Multiplier",
-      color = "Rule Type"
+      color = "HCR type"
     )
 }

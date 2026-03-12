@@ -23,7 +23,7 @@ for (i in 1:length(fun_list)) {
 nages        = 10
 maturity     = c(0,0,0,0,0.2,0.5,0.8,1,1,1)
 waa          = c(0, 0, 0, 65, 86, 100, 117, 130, 150, 152)
-selectivity  = c(0, 0.2, 0.4, 0.6, 0.9, 1, 1, 1, 1, 1)
+selectivity  = maturity
 
 vb_params = 
   list(
@@ -93,16 +93,16 @@ mse_output =
   run_mse(n_sims            = 100,
           nyears            = 60,
           burn_in_length    = 40,
-          hist_harvest_rate = 0.05,
+          hist_harvest_rate = 0.1,
           nages             = 10,
           init_nya          = stable_nya,
           waa               = waa,
           selectivity       = selectivity,
-          rec_regime_length = 5,
+          rec_regime_length = 15,
           rec_type          = "BV",
           survival_mean     = surv,
           survival_sd       = 0.05,
-          max_harvest_rate  = 1.05,
+          max_harvest_rate  = 0.2,
           maturity          = maturity,
           threshold         = thresholds,
           vb_params         = vb_params,
@@ -113,10 +113,10 @@ mse_output =
           lbspr_model_path  = here("estimation", "LBSPR", "LBSPR.stan"),
           sscl_model_path   = here("estimation", "SS_CL", "SS_CL.stan"),
           mcmc_setup        = mcmc_setup,
-          estimation        = TRUE,
+          estimation        = FALSE,
           est_method        = "SPM",
           hcr_type          = "absolute_hockey_stick",
-          parallel          = TRUE) 
+          parallel          = FALSE) 
 # 
 # 
 # nages = 10
@@ -157,24 +157,5 @@ mse_output =
 # plot(ssb, type = "l")
 
 # maybe I can use parameters of a well studied species. maybe multiple species?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

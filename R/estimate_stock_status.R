@@ -67,7 +67,7 @@ estimate_stock_status = function(method, model_state = NULL, current_obs = NULL,
       log_q = log(0.001),
       sigma_process = 0.1,
       sigma_obs = 0.1,
-      log_B_devs = rep(0, stan_data$nyears)
+      log_B_devs = rep(0, stan_data$nyears-1)
     )
     
     fit = rstan::sampling(

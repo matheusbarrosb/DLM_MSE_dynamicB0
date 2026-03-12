@@ -25,8 +25,7 @@ make_historical_sca_data = function(sim, burn_in_length, waa, maturity, selectiv
     obs_nya[y, ] = t(rmultinom(1, size = ess, prob = prob_a))
   }
   
-  # CRITICAL: Force R matrix to be strictly integer type for Stan 'int' array
-  storage.mode(obs_nya) <- "integer"
+  storage.mode(obs_nya) = "integer"
   
   waa_matrix = matrix(rep(waa, each = burn_in_length), nrow = burn_in_length, ncol = nages)
   

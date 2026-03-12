@@ -111,7 +111,7 @@ model {
   log_R0   ~ normal(5, 2);
   h        ~ beta(5, 5);
   rec_devs ~ normal(0, 0.2);
-  q        ~ normal(0, 5); 
+  q        ~ normal(-7, 2); 
   
   index ~ lognormal(log(pred_index), index_sigma);
   

@@ -7,6 +7,8 @@ project_pop = function(nages, waa, selectivity, curr_nya, maturity,
   M = -log(survival)
   true_start_ssb = sum(curr_nya * waa * maturity)
   
+  vuln_bio_start = sum(curr_nya * waa * selectivity)
+  
   nya_post_M      = curr_nya * exp(-M)
   vuln_bio_post_M = sum(nya_post_M * waa * selectivity)
   
@@ -27,7 +29,7 @@ project_pop = function(nages, waa, selectivity, curr_nya, maturity,
                                  anchor_catch      = anchor_catch)
       
       if (rule_output$type == "harvest_rate") {
-        target_catch = true_start_ssb * rule_output$value
+        target_catch = vuln_bio_post_M * rule_output$value
       } else {
         target_catch = rule_output$value
       }
@@ -39,7 +41,7 @@ project_pop = function(nages, waa, selectivity, curr_nya, maturity,
                                  thresholds        = thresholds,
                                  max_val           = max_harvest_rate)
       
-      target_catch = true_start_ssb * rule_output$value 
+      target_catch = vuln_bio_post_M * rule_output$value 
     }
   }
   

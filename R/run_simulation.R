@@ -127,7 +127,7 @@ run_simulation = function(nyears, init_nya, waa, nages,
     nya_ghost_mat[y,] = curr_ghost_nya
     catch[y]          = real_projection$total_catch
     
-    current_lengths   = real_projection$sample_numbers %*% prob_mat
+    current_lengths   = real_projection$catch_numbers %*% prob_mat
     length_mat[y, ]   = current_lengths
     
     # -------------------------------------------------------------------------
@@ -194,7 +194,7 @@ run_simulation = function(nyears, init_nya, waa, nages,
         selectivity = selectivity,
         sigma_index = 0.05,
         sigma_catch = 0,
-        ess         = 250
+        ess         = 200
       )
       
       assessment_result = tryCatch({
