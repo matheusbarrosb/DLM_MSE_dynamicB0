@@ -16,6 +16,7 @@ run_simulation = function(nyears, init_nya, waa, nages,
   seed_vec      = numeric(total_years)
   est_biomass   = numeric(nyears)
   
+  # growth --------------------------------------------
   k    = rnorm(1, vb_params$k, vb_params$k_sd)
   linf = rnorm(1, vb_params$linf, vb_params$linf_sd)
   
@@ -27,6 +28,7 @@ run_simulation = function(nyears, init_nya, waa, nages,
   prob_mat = matrix(0, nrow = nages, ncol = n_bins)
   colnames(prob_mat) = round(len_mids, 2)
   
+  # length transition matrix
   for(a in 1:nages) {
     mean_l  = linf * (1 - exp(-k * (a - vb_params$t0)))
     sigma_l = mean_l * 0.1 
@@ -40,7 +42,6 @@ run_simulation = function(nyears, init_nya, waa, nages,
   est_model_state   = NULL
   est_spawn_biomass = NULL
   est_history       = c()
-  
   for (y in 1:total_years) {
     
     seed_vec[y] = sample(1:1e6, 1)
@@ -157,7 +158,8 @@ run_simulation = function(nyears, init_nya, waa, nages,
           model_state   = NULL,
           history_data  = history_data,
           mcmc_setup    = mcmc_setup,
-          model_objects = model_objects
+          model_objects = model_objects,
+          sr_params     = sr_params
         )
       }, error = function(e) {
         err_msg = sprintf("[Scenario: %s | Sim: %03d | Year: %02d] ERROR IN ASSESSMENT: %s", scenario_name, sim_num, y, e$message)
@@ -202,8 +204,10 @@ run_simulation = function(nyears, init_nya, waa, nages,
           method        = est_method,
           model_state   = est_model_state,
           current_obs   = current_obs,
+          history_data  = history_data,
           mcmc_setup    = mcmc_setup,
-          model_objects = model_objects
+          model_objects = model_objects,
+          sr_params    = sr_params 
         )
       }, error = function(e) {
         err_msg = sprintf("[Scenario: %s | Sim: %03d | Year: %02d] ERROR IN ASSESSMENT: %s", scenario_name, sim_num, y, e$message)

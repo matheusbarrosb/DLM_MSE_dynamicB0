@@ -4,6 +4,7 @@ make_historical_sscl_data = function(sim, burn_in_length, vb_params,
   # subset historical period
   years = 1:burn_in_length
   obs_catch = as.numeric(sim$catch[years])
+  obs_catch[obs_catch < 1e-4] = 1e-4
   obs_len_mat = sim$length_mat[years, ]
   
   # determine bin midpoints

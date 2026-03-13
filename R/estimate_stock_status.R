@@ -1,5 +1,5 @@
 estimate_stock_status = function(method, model_state = NULL, current_obs = NULL, 
-                                 history_data = NULL, mcmc_setup = NULL, model_objects = NULL) {
+                                 history_data = NULL, mcmc_setup = NULL, model_objects = NULL, sr_params = NULL) {
   
   output = list(
     status = NA,
@@ -108,11 +108,12 @@ estimate_stock_status = function(method, model_state = NULL, current_obs = NULL,
       )
     }
     
+    safe_linf = if (!is.null(stan_data$Linf)) stan_data$Linf else 30
     init_list = list(
       log_F    = rep(log(0.1), stan_data$nyears),
       rec_devs = rep(0, stan_data$nyears - 1),
-      SL50     = stan_data$Linf * 0.5,
-      SL_diff  = stan_data$Linf * 0.1
+      SL50     = safe_linf * 0.5,
+      SL_diff  = safe_linf * 0.1
     )
     
     fit = rstan::sampling(
@@ -157,11 +158,14 @@ estimate_stock_status = function(method, model_state = NULL, current_obs = NULL,
     fit = rstan::sampling(
       object  = model_objects$LBSPR,
       data    = stan_data,
-      chains  = 1, 
-      iter    = 1000,
-      refresh = 0
+      chains  = mcmc_setup$chains, 
+      iter    = mcmc_setup$niter,
+      warmup  = mcmc_setup$nwarmup,
+      thin    = mcmc_setup$thin,
+      refresh = mcmc_setup$verbose,
+      control = list(adapt_delta = mcmc_setup$adapt_delta, max_treedepth = mcmc_setup$max_treedepth)
     )
-  
+    
     post = rstan::extract(fit)
     est_status = median(post$SPR)
     

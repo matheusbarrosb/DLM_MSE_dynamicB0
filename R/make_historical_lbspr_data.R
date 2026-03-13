@@ -17,6 +17,13 @@ make_historical_lbspr_data = function(sim, burn_in_length, vb_params,
   obs_prop = obs_len_comp / sum(obs_len_comp)
   obs_counts_scaled = round(obs_prop * ess)
   
+  if (sum(obs_len_comp) > 0) {
+    obs_prop = obs_len_comp / sum(obs_len_comp)
+    obs_counts_scaled = round(obs_prop * ess)
+  } else {
+    obs_counts_scaled = integer(length(obs_len_comp))
+  }
+  
   stan_data = list(
     n_len             = length(len_mids),
     n_ages            = nages,

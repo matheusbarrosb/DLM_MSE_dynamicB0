@@ -59,7 +59,7 @@ sr_params = list(
 
 
 # management procedure --------------------------------
-thresholds = c(0.25, 0.8)
+thresholds = c(0.3, 0.8)
 
 hcr_params = list(
   k_down          = 50, # steepness of the catch reduction when SPR drops below the target. # higher = more aggressive braking (cliff-like drop)
@@ -102,7 +102,7 @@ mse_output =
           rec_type          = "BV",
           survival_mean     = surv,
           survival_sd       = 0.05,
-          max_harvest_rate  = 0.2,
+          max_harvest_rate  = 1.01,
           maturity          = maturity,
           threshold         = thresholds,
           vb_params         = vb_params,
@@ -113,8 +113,8 @@ mse_output =
           lbspr_model_path  = here("estimation", "LBSPR", "LBSPR.stan"),
           sscl_model_path   = here("estimation", "SS_CL", "SS_CL.stan"),
           mcmc_setup        = mcmc_setup,
-          estimation        = FALSE,
-          est_method        = "SPM",
+          estimation        = TRUE,
+          est_method        = "SS_CL",
           hcr_type          = "absolute_hockey_stick",
           parallel          = FALSE) 
 # 

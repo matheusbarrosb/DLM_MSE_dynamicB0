@@ -65,7 +65,7 @@ threshold_list = list(
 mcmc_setup = 
   list(
     chains        = 1,
-    niter         = 300,
+    niter         = 200,
     nwarmup       = 100,
     thin          = 1,
     adapt_delta   = 0.99,
@@ -76,11 +76,11 @@ mcmc_setup =
 
 # define scenarios ------------------------------------
 scenarios = data.frame(
-  scenario_name = c("SCA_Absolute", "SPM_Absolute", "SSCL_Absolute", "LBSPR_Proportional"),
-  est_method    = c("SCA", "SPM", "SS_CL", "LBSPR"),
-  hcr_type      = c("absolute_hockey_stick", "absolute_hockey_stick", "absolute_hockey_stick", "proportional_multiplier"),
-  max_hr        = c(0.2, 0.2, 0.2, 1.05) # 0.2 harvest rate for absolute, 1.05 catch multiplier for relative
-)
+  scenario_name = c("SPM_Absolute", "SCA_Absolute", "SSCL_Absolute", "LBSPR_Proportional"),
+  est_method    = c("SPM", "SCA", "SS_CL", "LBSPR"),
+  hcr_type      = c(rep("absolute_hockey_stick",3), "proportional_multiplier"), 
+  max_hr        = c(rep(0.2,3), 1.05) # 0.2 harvest rate for absolute, 1.05 catch multiplier for relative
+);print(scenarios)
 
 # run -------------------------------------------------
 all_mse_results = list()
@@ -121,7 +121,7 @@ for (i in 1:nrow(scenarios)) {
             est_method        = current_scenario$est_method,
             hcr_type          = current_scenario$hcr_type,
             scenario_name     = current_scenario$scenario_name,
-            parallel          = TRUE) 
+            parallel          = FALSE) 
   
   save_path = here(paste0(current_scenario$scenario_name, "_results.rds"))
   saveRDS(mse_output, file = save_path)

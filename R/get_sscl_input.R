@@ -1,9 +1,14 @@
 get_sscl_input = function(stan_data, current_obs_catch, current_obs_len) {
   
-  # scale new length observation to ESS
+  if (current_obs_catch < 1e-4) current_obs_catch = 1e-4
+  
   ess = 100
-  prop = current_obs_len / sum(current_obs_len)
-  scaled_len = as.integer(round(prop * ess))
+  if (sum(current_obs_len) > 0) {
+    prop = current_obs_len / sum(current_obs_len)
+    scaled_len = as.integer(round(prop * ess))
+  } else {
+    scaled_len = integer(length(current_obs_len))
+  }
   
   # append data
   stan_data$catches = c(stan_data$catches, as.numeric(current_obs_catch))

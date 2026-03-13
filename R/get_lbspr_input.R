@@ -1,12 +1,13 @@
 get_lbspr_input = function(stan_data, current_obs_len) {
   
-  # scale to effective sample size
   ess = 100
-  obs_prop = current_obs_len / sum(current_obs_len)
-  obs_counts_scaled = round(obs_prop * ess)
+  if (sum(current_obs_len) > 0) {
+    obs_prop = current_obs_len / sum(current_obs_len)
+    obs_counts_scaled = as.integer(round(obs_prop * ess))
+  } else {
+    obs_counts_scaled = integer(length(current_obs_len))
+  }
   
-  # update observed counts
-  stan_data$obs_counts = as.integer(obs_counts_scaled)
-  
+  stan_data$obs_counts = obs_counts_scaled
   return(stan_data)
 }
